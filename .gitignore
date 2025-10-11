@@ -1,0 +1,95 @@
+# -----------------------------
+# Visual Studio Assembly Project .gitignore
+# -----------------------------
+
+# Build results
+[Bb]in/
+[Oo]bj/
+Debug/
+Release/
+x64/
+x86/
+ipch/
+*.idb
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.sdf
+*.opensdf
+*.tlog
+*.log
+*.pch
+*.tmp
+*.user
+*.ncb
+*.aps
+*.suo
+*.cache
+*.db
+*.opendb
+
+# MASM / UASM / NASM build outputs
+*.obj
+*.exe
+*.dll
+*.com
+*.lst
+*.map
+*.out
+*.o
+*.res
+
+# Visual Studio project and solution user data
+*.vcxproj.user
+*.vcxproj.filters
+*.userprefs
+*.vspscc
+*.vssscc
+*.vs/
+*.vsconfig
+
+# Backup and temporary files
+*.bak
+*.tmp
+*.old
+*~
+*.swp
+*.swn
+*.swo
+
+# Generated binaries or intermediate files
+*.bin
+*.hex
+*.lst
+*.map
+*.sym
+
+# Logs
+*.log
+*.err
+
+# Packages / Tools cache
+.nuget/
+packages/
+*.targets
+*.props
+
+# OS junk
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+Icon?
+*.lnk
+
+# -----------------------------
+# Keep source and scripts
+# -----------------------------
+!*.asm
+!*.inc
+!*.bat
+!*.cmd
+!*.txt
+!*.md
