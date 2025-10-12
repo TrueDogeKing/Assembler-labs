@@ -97,25 +97,44 @@ extern _ExitProcess@4 : PROC
     db 5,1,1,1     ; 'Z'
     dw 10
 
-	result dw ? ; miejsce na przechowanie wyniku kodowania
-
+	result dd ? ; miejsce na przechowanie wyniku kodowania
+    testString db "AZUX",0
+    checksum   dd 0
 
 .code
 _main PROC  
+	; Example usage of encode_bc412
+    push edx
     xor eax,eax
 	mov al, '0'          ; Example character
     lea edi, result       ; Where to store result
+    lea edx,testString  ; Point to test string
+string_loop:
+    mov al, [edx]
+    cmp al, 0
+    je done
     call encode_bc412
     cmp eax, -1
     je invalid_input
+    ;add edi,4
+    inc edx
+    jmp string_loop
 
-	push 4	 ; uint MB_YESNO
-	push 0
-	push edi
-	push 0	 ; HWND
-	call _MessageBoxW@16
+	;mov bx, word ptr [edi]   ; load from memory pointed by EDI into AX
+    ;mov result, bx           ; store AX into variable 'result'
 
 invalid_input:
+done:
+	; Calculate checksum modulo 35
+ 	mov eax, checksum
+	mov ebx, 35
+	xor edx, edx
+	div ebx
+	mov suma_kontrolna, dl   ; store checksum in byte variable
+    
+    pop edx
+	; Display result (for demonstration purposes)
+	; Here you can add code to display the result or checksum if needed
 	; Program exit
 	push 0
 	call _ExitProcess@4
@@ -171,13 +190,19 @@ encode_bc412 PROC
         jmp store_result
 
         store_result:
+        push eax
         xor edx,edx
-        xor ax,ax
-        xor cx,cx
-        add esi,3
+        xor eax,eax
+        xor ecx,ecx
+        add esi,4
+        mov al,[esi]
+        add checksum, eax
+        dec esi
+        xor eax,eax
     keep_encoding:
         mov dl,[esi]
         dec esi
+        ; shl can be used instead of coding_loop
         coding_loop:
 			inc cx
             dec dl
@@ -190,11 +215,15 @@ encode_bc412 PROC
 		mov dl,[esi]
         jmp keep_encoding
     end_encoding:
-        mov [edi],cx
+        mov [edi],ax
+        pop eax
         pop edx
         pop esi
         pop ecx
+        ret
 encode_bc412 ENDP
+
+
 
 
  END
