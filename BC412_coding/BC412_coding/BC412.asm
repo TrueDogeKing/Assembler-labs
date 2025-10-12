@@ -181,7 +181,7 @@ encode_bc412 PROC
     invalid_char:
 		; Invalid character handling
 		mov eax, -1
-		jmp store_result
+		jmp end_encoding
     valid_number:
     ; Calculate index in the table
         sub al, '0'
@@ -190,10 +190,10 @@ encode_bc412 PROC
         jmp store_result
 
         store_result:
-        push eax
         xor edx,edx
         xor eax,eax
         xor ecx,ecx
+        ; checksum calculation
         add esi,4
         mov al,[esi]
         add checksum, eax
@@ -216,7 +216,6 @@ encode_bc412 PROC
         jmp keep_encoding
     end_encoding:
         mov [edi],ax
-        pop eax
         pop edx
         pop esi
         pop ecx
