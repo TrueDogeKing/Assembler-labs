@@ -2,7 +2,6 @@
 .model flat
 
 public _main
-extern _MessageBoxW@16 : PROC
 extern _MessageBoxA@16 : PROC
 extern _ExitProcess@4 : PROC
 
@@ -21,7 +20,7 @@ text db 64 dup(?)
 	
 .code
 _main PROC  
-	mov eax,0000FFFFh
+	mov eax,7FFFFFFFh
 	
 	mov esi,offset text
 	call encode_dc_to_ascii
@@ -29,8 +28,8 @@ _main PROC
 
 	; Example MessageBoxA call
 	push 0
-	push offset text
-	push offset text
+	push esi
+	push esi
 	push 0
 	call _MessageBoxA@16
 
@@ -40,11 +39,16 @@ _main PROC
 _main ENDP
 
 encode_dc_to_ascii PROC
+		push ebp
+		mov ebp, esp
+		sub esp,4
 		push ebx
 		push edx
+		push esi
+		push ecx
 
 
-
+		; check sign and delete it after converting the sign into char
 		bt eax,31
 		jc  negative_number
 		mov [esi], byte ptr '+'
@@ -59,7 +63,10 @@ encode_dc_to_ascii PROC
 		shr eax,1
 		rcr bl,1
 		loop decimal_loop
+		; now eax holds the integer part, bl - the decimal part
+		mov [ebp-4],ebx  ; save dacimal part in stack
 
+		; encode integer part
 		mov ecx,7
 	next_char:
 		call one_char
@@ -67,67 +74,91 @@ encode_dc_to_ascii PROC
 		loop next_char
 
 		; now the decimal point
-		add esi,8
+		add esi,8 ; skip the integer part
 		mov byte ptr [esi],'.'
 
-		mov eax,ebx
 
-		mov ecx,100d
+		mov eax,[ebp-4] ; load decimal part
+
+		; eax*100/256= decimal decimal within two digits in al
+		; multiply by 100 allows us to get two digits after decimal point after division by 256 sth lesser than 256
+		mov ebx,100d
 		mov edx,0
-		mul ecx
-		mov ecx,256
-		div ecx
+		mul ebx
+		mov ebx,256
+		div ebx
 
+		; now al holds the decimal part within two digits
 		mov ecx,2
-		mov byte ptr [esi+ecx+1],0
-	fraction_loop:
+		mov byte ptr [esi+ecx+1],0 ; null-terminator for string
+	decimal_to_ascii_loop:
 		call one_char
 		mov [esi+ecx],dl
-		loop fraction_loop
+		loop decimal_to_ascii_loop
 
-
+		;  remove leading zeros in the text string
 		call cut_zeros
 		
+		pop ecx
+		pop esi
 		pop edx
 		pop ebx
+		add esp,4
+		pop ebp
         ret
 encode_dc_to_ascii ENDP
 
-one_char PROC
-		push ecx
-		mov edx,0
 
-		mov ecx,10d
-		div ecx
+; in: eax - number, edx will be overwritten
+; out: dl - ASCII character of the last digit
+one_char PROC
+		push ebx
+		xor edx,edx
+
+		mov ebx,10d
+		div ebx
 		add dl,'0'
 
-		pop ecx
+		pop ebx
 		ret
 one_char ENDP
 
-
+; in: none
+; out: remove leading zeros in the decimal part
 cut_zeros PROC
 		push ecx
-		push ebx
+		push esi
+		push edi
 
+		cld ;movsb going up
+
+	check_if_zero:
 		mov esi,offset text
 		inc esi
-	check_fraction:
-		mov ecx,10
+
 		cmp byte ptr [esi], '0'
 		jne done_checking
 
-		mov edi,0
-	next_check:
-		mov al, [esi+edi+1]
-		mov [esi+edi], al
-		inc edi
-		loop next_check
-		jmp check_fraction
+		mov edi,esi
+		inc esi
+
+		;mov ecx,0
+		;next_check:
+		;mov al, [esi+ecx+1]
+		;mov [esi+ecx], al
+		;inc ecx
+		;cmp ecx,10
+		;jb next_check
+		;loop next_check
+
+		mov ecx,10
+		rep movsb
+		jmp check_if_zero
 
 	done_checking:
 
-		pop ebx
+		pop edi
+		pop esi
 		pop ecx
 		ret
 cut_zeros ENDP
