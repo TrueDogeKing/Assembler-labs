@@ -8,14 +8,13 @@ extern _ExitProcess@4 : PROC
 
 ; ============================================================
 ; Project: Fixed-Point 32-bit U2 Converter
-; Function: Reads a hexadecimal string, converts to 32-bit signed
-;           integer, interprets it as fixed-point (Q24.8 format),
-;           and prints decimal number with two digits after the dot.
+; Function: Reads a 32-bit signed fixed-point (Q24.8 format) number,
+;           and prints decimal number with two digits after the dot on messagebox.
 ; ============================================================
 
 
 .data
-text db 64 dup(?)
+text db 12 dup(?)
 
 	
 .code
@@ -31,7 +30,7 @@ _main PROC
 	push esi
 	push esi
 	push 0
-	call _MessageBoxA@16
+  	call _MessageBoxA@16
 
 	push 0
 	call _ExitProcess@4
