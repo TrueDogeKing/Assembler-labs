@@ -9,7 +9,7 @@ extern __write:proc
 ; ============================================================
 ; Project: Fixed-Point 32-bit U2 Converter
 ; Function: Reads a 32-bit signed fixed-point (Q24.8 format) number,
-;           and prints decimal number with two digits after the dot on messagebox.
+;           and prints decimal number with two digits after the dot on console.
 ; ============================================================
 
 
