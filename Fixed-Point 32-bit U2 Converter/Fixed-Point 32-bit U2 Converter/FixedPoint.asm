@@ -14,8 +14,8 @@ extern __write:proc
 
 
 .data
-text db 12 dup(0)
-buffer db 17 dup(0)
+text db 30 dup(0)
+buffer db 25 dup(0)
 
 	
 .code
@@ -24,7 +24,7 @@ buffer db 17 dup(0)
 _main PROC  
 
 
-    push 16         ; max characters to read
+    push 24         ; max characters to read
     push offset buffer ; where to store the input
     push 0            ; stdin (keyboard)
     call __read
@@ -33,21 +33,10 @@ _main PROC
 	mov esi, offset buffer
 	call atoi_hex ; convert string to integer in eax
 	mov edx,eax
-
-	add esi, 8
 	call atoi_hex
 
 
-	;mov eax,7FFFFFFFh
-	
-	mov ebx,00FFFFFFFh
-	mov eax,0FFFFFFFFh
 
-	mov ecx,16
-testloop:
-	call Div64By10_safe
-	loop testloop
-	
 	call display
 
 
@@ -62,13 +51,12 @@ _main ENDP
 ; ============================================================
 ; atoi_hex: Converts hexadecimal string to integer
 ; Input: ESI = pointer to null-terminated hex string
-; Output: EAX = converted integer value
+; Output: EAX = converted integer value, ESI increased 
 ; ============================================================
 atoi_hex PROC
 		push ebx
 		push ecx
 		push edx
-		push esi
     
 		xor eax, eax            
 		xor ebx, ebx   
@@ -102,7 +90,6 @@ atoi_hex PROC
 		loop convert_loop
 
 	done:
-		pop esi
 		pop edx
 		pop ecx
 		pop ebx
@@ -175,10 +162,11 @@ display PROC
 		push ecx
 		push eax
 
+		xor ebx,ebx
 		
 		mov esi,offset text
 		; check sign and delete it after converting the sign into char
-		bt eax,31
+		bt edx,31
 		jc  negative_number
 		mov [esi], byte ptr '+'
 		jmp continue_encoding
@@ -196,26 +184,26 @@ display PROC
 	continue_encoding:
 		mov ecx,8
 	decimal_loop:
-		shr eax,1
+		shr edx,1
+		rcr eax,1
 		rcr bl,1
 		loop decimal_loop
 		; now eax holds the integer part, bl - the decimal part
 		mov [ebp-4],ebx  ; save dacimal part in stack
 
 		; encode integer part
-		mov ecx,7
+		mov ecx,17
 	next_char:
-		call one_char
-		mov [esi+ecx],dl
+		call one_char_2registers
+		mov [esi+ecx],bl
 		loop next_char
 
 		; now the decimal point
-		add esi,8 ; skip the integer part
+		add esi,18 ; skip the integer part
 		mov byte ptr [esi],'.'
 
 
 		mov eax,[ebp-4] ; load decimal part
-
 		; eax*100/256= decimal decimal within two digits in al
 		; multiply by 100 allows us to get two digits after decimal point after division by 256 sth lesser than 256
 		mov ebx,100d
@@ -235,7 +223,7 @@ display PROC
 		;  remove leading zeros in the text string
 		call cut_zeros
 		
-		push 12
+		push 30
 		push offset text
 		push 1
 		call __write
@@ -250,6 +238,7 @@ display PROC
 		pop ebp
         ret
 display ENDP
+
 
 
 ; ============================================================
@@ -270,48 +259,49 @@ one_char PROC
 one_char ENDP
 
 
-
 ; ============================================================
-; Div64By10_safe
+; one_char_2registers
 ; Divide 64-bit unsigned integer (EBX:EAX) by 10
 ; Outputs:
-;   EDX:EAX = quotient (64-bit)
-;   EDX     = remainder (mod 10)
+;   EBX:EAX = quotient (64-bit)
+;   EBX     = remainder (mod 10)
 ; ============================================================
 
-Div64By10_safe PROC
-    push    esi
-    push    edi
+one_char_2registers PROC
+    push esi
+    push edi
 	push ecx
 
-    mov     esi, eax        ; save low part
-    mov     edi, ebx        ; save high part
+    mov esi,eax        ; save low part
+    mov edi,edx        ; save high part
 
     ; --- Step 1: divide high part by 10 ---
-    mov     eax, edi
-    xor     edx, edx
-    mov     ecx, 10
-    div     ecx             ; EAX = high_quotient, EDX = high_remainder
-
-    mov     ebx, eax        ; ebx = high_quotient
-    mov     edi, edx        ; edi = high_remainder
+    mov eax,edi
+    xor edx,edx
+    mov ecx,10d
+    div ecx             ; EAX = high_quotient, EDX = high_remainder
+	
+    mov edi,edx        ; edi = high_remainder
+    mov ebx,eax        ; ebx = high_quotient
 
     ; --- Step 2: combine remainder from high with low part ---
     ; numerator = (high_remainder << 32) | low
-    mov     eax, esi        ; low part
-    mov     edx, edi        ; high_remainder
-    div     ecx             ; divide by 10 again
+    mov eax,esi        ; low part
+    mov edx,edi        ; high_remainder
+    div ecx             ; divide by 10 again
                             ; EAX = low_quotient, EDX = final_remainder
-
+	
     ; --- Step 3: combine quotients into 64-bit result ---
-    ;mov     ecx, edx        ; ECX = final remainder (this is correct!)
-    ;mov     edx, ebx        ; high_quotient
+    mov ecx,edx
+	mov edx,ebx
+	mov ebx,ecx
+	add ebx,'0'  ; convert remainder to ASCII
     ; eax already holds low_quotient
 	pop ecx
-    pop     edi
-    pop     esi
+    pop edi
+    pop esi
     ret
-Div64By10_safe ENDP
+one_char_2registers ENDP
 
 ; ============================================================
 ; cut_zeros: remove leading zeros in the text (data segment)
@@ -336,7 +326,7 @@ cut_zeros PROC
 		mov edi,esi
 		inc esi
 
-		mov ecx,10
+		mov ecx,20
 		rep movsb
 		jmp check_if_zero
 
