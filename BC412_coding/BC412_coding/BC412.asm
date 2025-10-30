@@ -104,6 +104,8 @@ extern _ExitProcess@4 : PROC
 .code
 _main PROC  
 	; Example usage of encode_bc412
+    
+
     push edx
     xor eax,eax
 	mov al, '0'          ; Example character
